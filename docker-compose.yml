@@ -1,6 +1,6 @@
 services:
   api:
-    container_name: gd-api
+    container_name: api
     build:
       dockerfile: Dockerfile.development
       args:

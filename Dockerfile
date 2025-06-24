@@ -59,5 +59,5 @@ RUN php artisan optimize
 RUN chmod +x docker/entrypoint.sh
 EXPOSE 80
 
-ENTRYPOINT ["docker/entrypoint.sh"]
+ENTRYPOINT ["./docker/entrypoint.sh"]
 
