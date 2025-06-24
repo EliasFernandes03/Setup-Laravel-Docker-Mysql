@@ -1,0 +1,63 @@
+FROM ubuntu:24.04
+
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:ondrej/php && \
+    apt-get update -y
+
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y \
+    nginx \
+    php8.3 \
+    php8.3-dom \
+    php8.3-xml \
+    php8.3-mbstring \
+    php8.3-tokenizer \
+    php8.3-fpm \
+    php8.3-intl \
+    php8.3-bcmath \
+    php8.3-bz2 \
+    php8.3-mbstring \
+    php8.3-opcache \
+    php8.3-pgsql \
+    php8.3-curl \
+    php8.3-gd \
+    php8.3-dom \
+    php8.3-simplexml \
+    php8.3-soap \
+    php8.3-redis \
+    php8.3-zip \
+    php8.3-xml \
+    php8.3-mongodb \
+    composer \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Ajusta as permissões para o PHP-FPM
+RUN sed -i 's/;listen.mode = 0660/listen.mode = 0666/' /etc/php/8.3/fpm/pool.d/www.conf
+
+COPY docker/nginx/nginx.conf /etc/nginx/sites-available/default
+
+WORKDIR /var/www/html
+
+COPY . .
+
+RUN git config --global --add safe.directory /var/www/html
+RUN composer config --global process-timeout 600
+
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist --optimize-autoloader
+
+RUN chmod -R 775 ./
+RUN chmod o+w ./storage/ -R
+RUN chmod -R 775 ./bootstrap/cache
+RUN chown -R www-data:www-data .
+RUN chown -R $USER:www-data ./storage
+RUN chown -R $USER:www-data ./bootstrap/cache
+RUN chmod +x ./artisan
+
+RUN php artisan route:list
+RUN php artisan optimize
+
+RUN chmod +x docker/entrypoint.sh
+EXPOSE 80
+
+ENTRYPOINT ["docker/entrypoint.sh"]
+
